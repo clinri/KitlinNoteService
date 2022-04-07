@@ -9,6 +9,9 @@ object NoteServise {
     private var comments: MutableMap<Int, Comment> = HashMap()
     private var commentCount: Int = 1
 
+    /**     Note (CRUD)     */
+    // Create
+
     fun add(note: Note): Int {
         val id = noteCount++
         val noteWithId: Note = note.copy(id = id)
@@ -16,8 +19,32 @@ object NoteServise {
         return id
     }
 
-    fun delete(noteId: Int): Boolean = notes.remove(noteId) != null
+    // Reed
 
+    // Update
+
+    // Delete
+    fun delete(noteIdDelete: Int): Boolean {
+        if (notes[noteIdDelete] != null) {
+            if (!notes[noteIdDelete]!!.isDelete) {
+                notes[noteIdDelete]!!.isDelete = true
+                for (comment in comments) {
+                    val (noteId) = comment
+                    if (noteId == noteIdDelete) {
+                        comments[comment.key]!!.isDelete = true
+                    }
+                }
+                return true
+            } else {
+                return false
+            }
+        }
+        return false
+    }
+
+
+    /**     Comment (CRUD)     */
+    // Create
     fun createComment(comment: Comment): Int {
         val id = commentCount++
         val commentWithId: Comment = comment.copy(id = id)
@@ -25,8 +52,14 @@ object NoteServise {
         return id
     }
 
+    // Reed
+
+    // Update
+
+    // Delete
     fun deleteComment(commentId: Int) = comments.remove(commentId) != null
 
+    /**     other functions     */
     fun fillNotes() {
         add(Note(title = "Kotlin", text = "Kotlin is ..."))
         add(Note(title = "Java", text = "Java is ..."))
@@ -38,8 +71,10 @@ object NoteServise {
     }
 
     fun getNotes(): MutableMap<Int, Note> = notes
+
     fun getComments(): MutableMap<Int, Comment> = comments
-    fun removeAll(){
+
+    fun removeAll() {
         notes.clear()
         noteCount = 1
         comments.clear()
