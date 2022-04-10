@@ -30,7 +30,7 @@ class TestNoteServise {
 
     @After
     fun showMaps(){
-        println(NoteServise.getNotes())
+        println(NoteServise.get())
         println(NoteServise.getComments())
         NoteServise.removeAll()
     }
