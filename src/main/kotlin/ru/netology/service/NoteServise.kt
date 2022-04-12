@@ -2,7 +2,6 @@ package ru.netology.service
 
 import ru.netology.data.Comment
 import ru.netology.data.Note
-import ru.netology.service.GetNotes.*
 
 object NoteServise {
     private var notes: MutableList<Note> = mutableListOf()
@@ -19,63 +18,48 @@ object NoteServise {
         return newId
     }
 
-    // Reed
+    // Read
     // получение заметок по идентификаторам заметок, информацию о которых необходимо получить.
-    fun get(vararg idNotes: Int): MutableList<Note> {
-        val getNotes = mutableListOf<Note>()
-        for (idNote in idNotes) {
-            for ((index, value) in notes.withIndex()) {
-                if (value.id == idNote) {
-                    getNotes.add(notes[index])
-                }
-            }
-        }
-        return getNotes
-    }
-
-
-    fun get(param: Int, type: GetNotes): MutableList<Note> {
+    fun get(vararg idNotes: Int, userId: Int, offset: Int = 0, count: Int, sort: Int = 0): MutableList<Note> {
         var getNotes: MutableList<Note> = mutableListOf()
-        when (type) {
-            // получение заметок по идентификатору пользователя, информацию о заметках которого требуется получить.
-            USER_ID -> {
-                for ((index, value) in notes.withIndex()) {
-                    if (value.user_id == param) {
-                        getNotes.add(notes[index])
+        val n = 0
+        for (idNote in idNotes) {
+            for (value in notes) {
+                if ((value.id == idNote) && (value.user_id == userId)) {
+                    if (n >= offset) {
+                        getNotes.add(value)
+                    }
+                    if (getNotes.size == count) {
+                        break
                     }
                 }
-                return getNotes
-            }
-            //получение заметок по cмещению (offset), необходимому для выборки определенного подмножества
-            OFFSET -> {
-                for (i in param - 1..notes.size) {
-                    getNotes.add(notes[i])
-                }
-                return getNotes
-            }
-            COUNT -> {
-                for (i in 0 until param) {
-                    getNotes.add(notes[i])
-                }
-                return getNotes
-            }
-            SORT -> {
-                if (param == 0) {//по дате создания в порядке убывания
-                    getNotes.addAll(notes)
-                    getNotes.sortBy { it.date }
-                } else if (param == 1) {
-                    getNotes.addAll(notes)
-                    getNotes.sortBy { it.date }
-                    getNotes.asReversed()
-                }
             }
         }
-        return getNotes
+        when (sort) {
+            0 -> {
+                getNotes.sortBy { it.date }
+            }
+            1 -> {
+                getNotes.sortBy { it.date }
+                getNotes = getNotes.asReversed()
+            }
+        }
+        return getNotes.ifEmpty {
+            throw NoteNotFoundExceptions()
+        }
     }
 
-    fun getById(id: Int): Note = notes[id]
+    // получение заметок по идентификатору заметки, и идентификатору владельца заметки
+    fun getById(id: Int, owner_id: Int): Note {
+        for (note in notes) {
+            if (note.id == id && note.user_id == owner_id)
+                return note
+        }
+        throw NoteNotFoundExceptions()
+    }
 
     // Update
+    // редактирование заметки
     fun edit(note: Note): Boolean {
         for ((index, value) in notes.withIndex()) {
             if (value.id == note.id) {
@@ -88,15 +72,11 @@ object NoteServise {
 
     // Delete
     fun delete(noteIdDelete: Int): Boolean {
-        if (!notes[noteIdDelete].isDelete) {
-            notes[noteIdDelete].isDelete = true // заметка отмечена как удаленная
-            for ((index, value) in comments.withIndex()) {
-                if (value.noteId == noteIdDelete) {
-                    if (!value.isDelete)
-                        comments[index].isDelete = true // комментарии к заметке отмечены как удаленные
-                }
+        for ((index, value) in notes.withIndex()) {
+            if (value.id == noteIdDelete && !value.isDelete) {
+                notes[index] = value.copy(isDelete = true) // заметка отмечена как удаленная
+                return true
             }
-            return true
         }
         return false // заметка уже отмечена как удаленная
     }
@@ -110,13 +90,66 @@ object NoteServise {
         return newId
     }
 
-    // Reed
-    fun getComments(): MutableList<Comment> = comments
+    // Read
+    // получение комментариев к заметке по идентификаторам заметок.
+    fun getComments(idNote: Int, userId: Int, offset: Int = 0, count: Int, sort: Int = 0): MutableList<Comment> {
+        var getComments: MutableList<Comment> = mutableListOf()
+        val n = 0
+        for (value in comments) {
+            if ((value.noteId == idNote) && (value.user_id == userId)) {
+                if (n >= offset) {
+                    getComments.add(value)
+                }
+                if (getComments.size == count) {
+                    break
+                }
+            }
+        }
+        when (sort) {
+            0 -> {
+                getComments.sortBy { it.date }
+            }
+            1 -> {
+                getComments.sortBy { it.date }
+                getComments = getComments.asReversed()
+            }
+        }
+        return getComments.ifEmpty {
+            throw NoteNotFoundExceptions()
+        }
+    }
 
     // Update
+    fun editComment(comment: Comment): Boolean {
+        for ((index, value) in comments.withIndex()) {
+            if (value.id == comment.id) {
+                comments[index] = comment.copy(date = value.date)
+                return true
+            }
+        }
+        return false
+    }
 
     // Delete
-    fun deleteComment(commentId: Int):Boolean = comments.removeAt(commentId) != null
+    fun deleteComment(commentId: Int, owner_id: Int) : Int {
+        for ((index, value) in comments.withIndex()){
+            if(value.id == commentId && value.user_id == owner_id){
+                comments[index] = value.copy(isDelete = true)
+                return 1
+            }
+        }
+        return 0
+    }
+
+    fun restoreComment(commentId: Int, owner_id: Int): Int {
+        for ((index, value) in comments.withIndex()){
+            if(value.id == commentId && value.user_id == owner_id){
+                comments[index] = value.copy(isDelete = false)
+                return 1
+            }
+        }
+        return 0
+    }
 
     /**     other functions     */
     fun fillNotes() {
@@ -126,8 +159,8 @@ object NoteServise {
 
 
     fun fillComments() {
-        createComment(Comment(noteId = 1, message = "I agree"))
-        createComment(Comment(noteId = 1, message = "I like it"))
+        createComment(Comment(noteId = 1, user_id = 237, message = "I agree"))
+        createComment(Comment(noteId = 1, user_id = 234, message = "I like it"))
     }
 
     fun removeAll() {
