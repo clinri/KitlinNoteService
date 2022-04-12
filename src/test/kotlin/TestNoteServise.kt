@@ -14,7 +14,7 @@ class TestNoteServise {
 
     @Test
     fun test_add_id_in_note() {
-        val id = NoteServise.add(Note(title = "VB", text = "VB is ..."))
+        val id = NoteServise.add(Note(title = "VB", text = "VB is ...", user_id = 111))
         Assert.assertEquals(id, 3)
     }
 

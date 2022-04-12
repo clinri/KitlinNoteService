@@ -15,7 +15,7 @@ object NoteServise {
     fun add(note: Note): Int {
         val newId = noteCount++
         val noteWithId: Note = note.copy(id = newId)
-        notes[newId] = noteWithId
+        notes.add(noteWithId)
         return newId
     }
 
@@ -73,12 +73,6 @@ object NoteServise {
         return getNotes
     }
 
-    //получение заметок по cмещению (offset), необходимому для выборки определенного подмножества
-    fun get(count: Int): MutableList<Note> {
-
-    }
-
-
     fun getById(id: Int): Note = notes[id]
 
     // Update
@@ -112,51 +106,34 @@ object NoteServise {
     fun createComment(comment: Comment): Int {
         val newId = commentCount++
         val commentWithId: Comment = comment.copy(id = newId)
-        comments[newId] = commentWithId
+        comments.add(commentWithId)
         return newId
     }
 
     // Reed
+    fun getComments(): MutableList<Comment> = comments
 
     // Update
 
     // Delete
-    fun deleteComment(commentId: Int) = comments.remove(commentId) != null
+    fun deleteComment(commentId: Int):Boolean = comments.removeAt(commentId) != null
 
     /**     other functions     */
     fun fillNotes() {
-        add(Note(title = "Kotlin", text = "Kotlin is ..."))
-        add(Note(title = "Java", text = "Java is ..."))
+        add(Note(title = "Kotlin", text = "Kotlin is ...", user_id = 555))
+        add(Note(title = "Java", text = "Java is ...", user_id = 655))
     }
+
 
     fun fillComments() {
         createComment(Comment(noteId = 1, message = "I agree"))
         createComment(Comment(noteId = 1, message = "I like it"))
     }
 
-    fun getComments(): MutableMap<Int, Comment> = comments
-
     fun removeAll() {
         notes.clear()
         noteCount = 1
         comments.clear()
         commentCount = 1
-    }
-
-    /** CRUD */
-    override fun create(item: DataItem): Int {
-        val thisItem = item as Note
-        val newId = noteCount++
-        val noteWithId: Note = thisItem.copy(id = newId)
-        notes[newId] = noteWithId
-        return newId
-    }
-
-    override fun read(id: Int): DataItem {
-        TODO("Not yet implemented")
-    }
-
-    override fun update(id: Int, item: DataItem) {
-        TODO("Not yet implemented")
     }
 }
