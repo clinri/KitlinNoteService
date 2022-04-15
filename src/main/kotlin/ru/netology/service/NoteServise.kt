@@ -37,15 +37,15 @@ object NoteServise {
         }
         when (sort) {
             0 -> {
-                getNotes.sortBy { it.date }
+                getNotes.sortedWith(compareBy { it.date })
             }
             1 -> {
-                getNotes.sortBy { it.date }
+                getNotes.sortedWith(compareBy { it.date })
                 getNotes = getNotes.asReversed()
             }
         }
         return getNotes.ifEmpty {
-            throw NoteNotFoundExceptions()
+            throw ItemNotFoundExceptions()
         }
     }
 
@@ -55,7 +55,7 @@ object NoteServise {
             if (note.id == id && note.user_id == owner_id)
                 return note
         }
-        throw NoteNotFoundExceptions()
+        throw ItemNotFoundExceptions()
     }
 
     // Update
@@ -73,12 +73,15 @@ object NoteServise {
     // Delete
     fun delete(noteIdDelete: Int): Boolean {
         for ((index, value) in notes.withIndex()) {
-            if (value.id == noteIdDelete && !value.isDelete) {
+            if (value.id == noteIdDelete) {
+                if (value.isDelete) {
+                    throw ItemAlreadyDeleteException("Вы пытаетесь удалить заметку которая уже удалена")
+                }
                 notes[index] = value.copy(isDelete = true) // заметка отмечена как удаленная
                 return true
             }
         }
-        return false // заметка уже отмечена как удаленная
+        return false // заметка не найдена
     }
 
     /**     Comment (CRUD)     */
@@ -107,22 +110,33 @@ object NoteServise {
         }
         when (sort) {
             0 -> {
-                getComments.sortBy { it.date }
+                getComments.sortedWith(compareBy { it.date })
             }
             1 -> {
-                getComments.sortBy { it.date }
+                getComments.sortedWith(compareBy { it.date })
                 getComments = getComments.asReversed()
             }
         }
         return getComments.ifEmpty {
-            throw NoteNotFoundExceptions()
+            throw ItemNotFoundExceptions()
         }
+    }
+
+    fun getCommentById(id: Int): Comment {
+        for (comment in comments) {
+            if (comment.id == id)
+                return comment
+        }
+        throw ItemNotFoundExceptions("Comment not found")
     }
 
     // Update
     fun editComment(comment: Comment): Boolean {
         for ((index, value) in comments.withIndex()) {
             if (value.id == comment.id) {
+                if (value.isDelete) {
+                    throw ItemAlreadyDeleteException("Вы пытаетесь отредактировать удаленный комментарий")
+                }
                 comments[index] = comment.copy(date = value.date)
                 return true
             }
@@ -131,9 +145,12 @@ object NoteServise {
     }
 
     // Delete
-    fun deleteComment(commentId: Int, owner_id: Int) : Int {
-        for ((index, value) in comments.withIndex()){
-            if(value.id == commentId && value.user_id == owner_id){
+    fun deleteComment(commentId: Int, owner_id: Int): Int {
+        for ((index, value) in comments.withIndex()) {
+            if (value.id == commentId && value.user_id == owner_id) {
+                if (value.isDelete) {
+                    throw ItemAlreadyDeleteException("Вы пытаетесь удалить комментарий, который уже был удален")
+                }
                 comments[index] = value.copy(isDelete = true)
                 return 1
             }
@@ -142,27 +159,19 @@ object NoteServise {
     }
 
     fun restoreComment(commentId: Int, owner_id: Int): Int {
-        for ((index, value) in comments.withIndex()){
-            if(value.id == commentId && value.user_id == owner_id){
+        for ((index, value) in comments.withIndex()) {
+            if (value.id == commentId && value.user_id == owner_id) {
+                if (value.isDelete){
+                    return 1
+                }
                 comments[index] = value.copy(isDelete = false)
-                return 1
+                return 0
             }
         }
         return 0
     }
 
     /**     other functions     */
-    fun fillNotes() {
-        add(Note(title = "Kotlin", text = "Kotlin is ...", user_id = 555))
-        add(Note(title = "Java", text = "Java is ...", user_id = 655))
-    }
-
-
-    fun fillComments() {
-        createComment(Comment(noteId = 1, user_id = 237, message = "I agree"))
-        createComment(Comment(noteId = 1, user_id = 234, message = "I like it"))
-    }
-
     fun removeAll() {
         notes.clear()
         noteCount = 1
